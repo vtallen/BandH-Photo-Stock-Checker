@@ -1,4 +1,4 @@
-# BandH-Photo-Stock-Checker
+# B&H Photo Stock Checker
 ---
 This script can be used to check if a list of items is in stock or not on bhphotovideo.com. If an item is in stock, the script uses gmail smtp to send a notification email to the address of your choice.
 
