@@ -1,3 +1,10 @@
+'''
+TODO
+- Add documentation to this spaghetti monster so that when I look back at it I don't question my sanity
+
+
+
+'''
 from selenium import webdriver
 import smtplib
 import time
@@ -14,7 +21,6 @@ conf = {
     "request_interval": None,
     "binary_location": None,
 }
-
 
 def initialize():
     global conf
@@ -103,7 +109,7 @@ def is_in_stock(url):
 
 def send_email(message):
     global conf
-    log_message = str(datetime.datetime.now()) + " IN STOCK EMAIL SENT"
+    log_message = str(datetime.datetime.now()) + " EMAIL SENT"
     print(log_message)
     log(log_message)
     # creates SMTP session
@@ -127,8 +133,8 @@ def main():
     while running:
         for url in urls.keys():
             title, in_stock = is_in_stock(url)
-            if in_stock == True and urls.get(url) != "email_sent":
-                urls[url] = "email_sent"
+            if in_stock == True and urls.get(url) != "in_stock":
+                urls[url] = "in_stock"
 
                 subject = "B&H Photo Item Is In Stock"
 
@@ -147,6 +153,26 @@ def main():
                 urls_file = open("urls.json", "w")
                 json.dump(urls, urls_file, indent=len(urls.keys()) + 1)
                 urls_file.close()
+            elif in_stock == False and urls.get(url) == "in_stock":
+                urls[url] = "out_of_stock"
+
+                subject = "B&H Photo Item Out Of Stock"
+
+                text = f"""
+                                B&H Photo Item : {title}
+                                Has changed stock status
+                                
+                                See it at {url}
+                                """
+
+                message = 'Subject: {}\n\n{}'.format(subject, text)
+
+                send_email(message)
+
+                # Dump the urls dictionary to reflect that the email has been sent
+                urls_file = open("urls.json", "w")
+                json.dump(urls, urls_file, indent=len(urls.keys()) + 1)
+                urls_file.close()
 
         time.sleep(conf.get("request_interval"))
 
@@ -154,5 +180,3 @@ def main():
 if __name__ == '__main__':
     initialize()
     main()
-
-
