@@ -1,10 +1,3 @@
-'''
-TODO
-- Add documentation to this spaghetti monster so that when I look back at it I don't question my sanity
-
-
-
-'''
 from selenium import webdriver
 import smtplib
 import time
@@ -21,6 +14,7 @@ conf = {
     "request_interval": None,
     "binary_location": None,
 }
+
 
 def initialize():
     global conf
@@ -59,13 +53,16 @@ def initialize():
         urls_file.close()
     else:
         print("urls.json not found")
+
         while gathering_urls:
             input_url = input("B&H Photo Product URL :: ")
             urls[input_url] = "no_email_sent"
+
             add_again = input("Add another URL? (Y/N) :: ")
             if add_again.lower() == "n":
                 gathering_urls = False
 
+        # Save the configuration file
         urls_file = open("urls.json", "w")
         json.dump(urls, urls_file, indent=len(urls.keys()) + 1)
         urls_file.close()
@@ -80,25 +77,26 @@ def log(message):
 def is_in_stock(url):
     global conf
 
-    # service = Service(driver_path)
     options = webdriver.ChromeOptions()
     options.binary_location = conf.get("binary_location")  # Path to Brave Browser (this is the default)
 
     driver = webdriver.Chrome(options=options)
 
-    # From here its Selenium as usual, example:
     driver.get(url)
 
     stock_status = driver.find_element('xpath', '//*[@data-selenium="stockStatus"]')
     item_title = driver.find_element('xpath', '//*[@data-selenium="productTitle"]')
+
     item_title = item_title.text
     stock_status = stock_status.text
+
     driver.close()
 
     log_message = str(datetime.datetime.now()) + " " + item_title + " : Stock Status : " + stock_status
     print(log_message)
     log(log_message)
 
+    # Checks what to return based off of what is found on the website
     if stock_status == "Temporarily Out of Stock" or stock_status == "Back-Ordered":
         return item_title, False
     elif stock_status == "In Stock":
@@ -109,6 +107,7 @@ def is_in_stock(url):
 
 def send_email(message):
     global conf
+
     log_message = str(datetime.datetime.now()) + " EMAIL SENT"
     print(log_message)
     log(log_message)
@@ -128,11 +127,21 @@ def send_email(message):
     s.quit()
 
 
+def dump_urls_file():
+    global urls
+    urls_file = open("urls.json", "w")
+    json.dump(urls, urls_file, indent=len(urls.keys()) + 1)
+    urls_file.close()
+
+
 def main():
     running = True
+
     while running:
         for url in urls.keys():
+            # Call the is_in_stock method to see if the item is in stock
             title, in_stock = is_in_stock(url)
+
             if in_stock == True and urls.get(url) != "in_stock":
                 urls[url] = "in_stock"
 
@@ -149,10 +158,9 @@ def main():
 
                 send_email(message)
 
-                # Dump the urls dictionary to reflect that the email has been sent
-                urls_file = open("urls.json", "w")
-                json.dump(urls, urls_file, indent=len(urls.keys()) + 1)
-                urls_file.close()
+                # Update the urls.json file
+                dump_urls_file()
+
             elif in_stock == False and urls.get(url) == "in_stock":
                 urls[url] = "out_of_stock"
 
@@ -169,10 +177,8 @@ def main():
 
                 send_email(message)
 
-                # Dump the urls dictionary to reflect that the email has been sent
-                urls_file = open("urls.json", "w")
-                json.dump(urls, urls_file, indent=len(urls.keys()) + 1)
-                urls_file.close()
+                # Update the urls.json file
+                dump_urls_file()
 
         time.sleep(conf.get("request_interval"))
 
